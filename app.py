@@ -1,5 +1,6 @@
 """Demo app using SQLAlchemy."""
 
+from crypt import methods
 from flask import Flask, request, redirect, render_template
 from flask_debugtoolbar import DebugToolbarExtension
 from models import db, connect_db, Pet 
@@ -26,12 +27,31 @@ def list_pets():
     pets = Pet.query.all()
     return render_template('list.html', pets = pets)
 
+@app.route('/', methods=["POST"])
+def create_pet():
+    name = request.form['name']
+    species = request.form['species']
+    hunger = request.form['hunger']
+    hunger = int(hunger) if hunger else None
+
+    new_pet = Pet(name=name, species=species, hunger=hunger)
+    db.session.add(new_pet)
+    db.session.commit()
+
+    return redirect(f"/{new_pet.id}")
+
+
 @app.route('/<int:pet_id>')
 def show_pet(pet_id):
     """show details about a single pet"""
     pet = Pet.query.get_or_404(pet_id) 
     # This allows for you to respond with a 404 if it is not found. 
-    return f"<h1>{pet.name}</h1>"
+    return render_template("details.html", pet=pet)
+
+@app.route("/species/<species_id>")
+def show_pets_by_species(species_id):
+    pets = Pet.get_by_species(species_id)
+    return render_template('species.html', pets=pets, species=species_id)
 
 
 
